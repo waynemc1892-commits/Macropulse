@@ -154,6 +154,13 @@ dialog label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}
     <h2 style="font-size:22px">Meal log</h2>
     <div id="log"></div>
   </section>
+  <section class="card">
+    <h2 style="font-size:22px">Back up your data</h2>
+    <p style="color:var(--mut);margin:8px 0 0">Your log is stored only in this browser. Export a copy now and then, and import it to restore.</p>
+    <button class="btn" onclick="exportData()">Export backup</button>
+    <button class="btn alt" onclick="$('impFile').click()">Import backup</button>
+    <input type="file" id="impFile" accept=".json,application/json" style="display:none" onchange="importData(this)">
+  </section>
 </main>
 
 <dialog id="goals"><h2>Goals</h2>
@@ -308,6 +315,25 @@ function alarmICS(){
  const[h,m]=S.medTime.split(':'),d=today().replace(/-/g,'');
  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MacroPulse//EN','BEGIN:VEVENT','UID:macropulse-meds@local','DTSTAMP:'+d+'T000000','DTSTART:'+d+'T'+h+m+'00','DURATION:PT15M','RRULE:FREQ=DAILY','SUMMARY:Take cholesterol medication','BEGIN:VALARM','TRIGGER:PT0M','ACTION:DISPLAY','DESCRIPTION:Take cholesterol medication','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download='meds-reminder.ics';a.click();
+}
+function exportData(){
+ const a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));
+ a.download='macropulse-backup-'+today()+'.json';a.click();
+}
+function importData(inp){
+ const f=inp.files[0];if(!f)return;
+ const rd=new FileReader();
+ rd.onload=()=>{
+  try{
+   const j=JSON.parse(rd.result);
+   if(!j||typeof j.days!=='object'||typeof j.goals!=='object')throw 0;
+   if(!confirm('Replace the data in this app with the backup?'))return;
+   Object.assign(S,j);render();alert('Backup restored.');
+  }catch(e){alert('That file is not a MacroPulse backup.')}
+  inp.value='';
+ };
+ rd.readAsText(f);
 }
 setInterval(render,60000);render();
 </script>
